@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MovieApp-JQuery</title>
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%;
+            height: 100vh;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        h2 {
+            margin: 1em 0em;
+        }
+
+        #form div {
+            margin: 1em 0;
+        }
+
+        button {
+            padding: 0.25em 0.5em;
+            border-radius: 0.25em;
+            font-size: 0.8em;
+            background: hsl(117, 100%, 27%);
+            transform: translateY(-6px);
+            color: whitesmoke;
+            cursor: pointer;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 0.9em;
+            font-family: sans-serif;
+            min-width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        thead tr {
+            background-color: #0047a461;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #dddddd;
+        }
+
+        tbody tr:nth-of-type(even) {
+            background-color: #f3f3f3;
+        }
+
+        tbody tr:last-of-type {
+            border-bottom: 2px solid #009879;
+        }
+
+        td {
+            text-align: center;
+        }
+
+        .removeCol {
+            width: 4em;
+            font-weight: 700;
+            color: rgb(179, 1, 1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Submit A Movie And Its Rating</h2>
+    <form action="" id="form">
+        <div>
+            <label for="title">Movie Title</label>
+            <input type="text" id="title">
+        </div>
+        <div>
+            <label for="rating">Movie Rating</label>
+            <input type="number" id="rating" max="10" min="0">
+        </div>
+        <button type="submit" id="submitBtn">Submit</button>
+    </form>
+    <label>
+        Sort
+    </label><select id="key">
+        <option value="descendingSortedRatings">Highest to Lowest</option>
+        <option value="ascendingSortedRatings">Lowest to Highest</option>
+    </select>
+    <table class="hide">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Rating</th>
+                <th class="removeCol">Remove</th>
+            </tr>
+        </thead>
+        <tbody id="moviesTable">
+
+        </tbody>
+    </table>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script>
+
+        const table = $("table");
+        const movies = [
+            { title: "The Shawshank Redemption", rating: 9.3 },
+            { title: "The Godfather", rating: 9.2 },
+            { title: "The Dark Knight", rating: 9.0 },
+            { title: "Schindler's List", rating: 8.9 },
+            { title: "Forrest Gump", rating: 8.8 },
+        ];
+        let currMovieList = []
+
+        class Movie {
+            constructor(title, rating) {
+                this.title = title;
+                this.rating = rating;
+                this.createRow(title, rating);
+            }
+
+            createRow(title, rating) {
+                currMovieList.push({ title, rating });
+                const row = $(`<tr></tr>`);
+                $(`<td>${title}</td>`).appendTo(row);
+                $(`<td>${rating}</td>`).appendTo(row);
+                $(`<td>X</td>`).addClass("removeCol").on("click", (e) => {
+                    e.target.parentElement.remove();
+                    console.log(currMovieList[e.target.parentElement.firstChild.innerText])
+                    console.log(e.target.parentElement.firstChild.innerText, "and the currMoviesList: ", currMovieList);
+                    if ($("tr").length < 2) {
+                        $(table).addClass("hide");
+                    }
+                }).appendTo(row);
+                row.appendTo(`#moviesTable`);
+                return currMovieList;
+            }
+        }
+
+        const sortFunctions = {
+            descendingSortedRatings(a, b) {
+                return b.rating - a.rating;
+            },
+            ascendingSortedRatings(a, b) {
+                return a.rating - b.rating;
+            }
+        }
+
+        $("#submitBtn").on("click", (e) => {
+            e.preventDefault();
+            if ($(`#title`).val() === "" || $(`#rating`).val() === "") {
+                alert("Must enter movie title and rating!");
+            } else if ($(`#title`).val().length < 2 || $(`#rating`).val() > 10) {
+                alert("Movie Title must be longer than 2 characters, and rating must be a number from 0 - 10.");
+            }
+            else {
+                $(table).removeClass("hide");
+                const newMovie = new Movie($("#title").val(), $("#rating").val());
+                $(`#title`).val("");
+                $(`#rating`).val("");
+            }
+        })
+
+        $(document).ready(() => {
+            movies.map((movie) => {
+                new Movie(movie["title"], movie["rating"]);
+                $(table).removeClass("hide");
+            })
+        })
+
+        $(document).on("change", "select", (e) => {
+            let sortedArr = currMovieList.sort(sortFunctions[`${e.target.value}`]); // Sort by rating
+            $("#moviesTable").html("");
+            for (let movie of sortedArr) {
+                const existingRow = $(`tr:contains(${movie.title})`);
+                if (existingRow.length) {
+                    existingRow.appendTo("#moviesTable");
+                } else {
+                    const row = $(`<tr></tr>`);
+                    $(`<td>${movie.title}</td>`).appendTo(row);
+                    $(`<td>${movie.rating}</td>`).appendTo(row);
+                    $(`<td>X</td>`).addClass("removeCol").on("click", (e) => {
+                        e.target.parentElement.remove();
+                        currMovieList = currMovieList.filter(movie => movie.title !== e.target.parentElement.firstChild.innerText);
+                        if ($("tr").length < 2) {
+                            $(table).addClass("hide");
+                        }
+                    }).appendTo(row);
+                    row.appendTo(`#moviesTable`);
+                }
+            };
+        });
+
+    </script>
+</body>
+
+</html>
